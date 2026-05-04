@@ -8,6 +8,8 @@ const Payment = () => {
   const orderDetails = state?.orderDetails || {};
 
   const [selectedMethod, setSelectedMethod] = useState("creditCard");
+  const [loading, setLoading] = useState(false);
+
   const stripe = useStripe();
   const elements = useElements();
 
@@ -18,6 +20,9 @@ const Payment = () => {
   const handlePayment = async (event) => {
     event.preventDefault();
 
+    // ❌ Prevent double clicks
+    if (loading) return;
+
     // ✅ COD CASE
     if (selectedMethod === "cash on delivery") {
       alert("Order placed with Cash on Delivery!");
@@ -25,9 +30,18 @@ const Payment = () => {
     }
 
     if (!stripe || !elements) {
-      alert("Stripe not loaded");
+      alert("Stripe not loaded yet");
       return;
     }
+
+    const amount = Number(orderDetails.totalAmount);
+
+    if (!amount || amount <= 0) {
+      alert("Invalid order amount");
+      return;
+    }
+
+    setLoading(true);
 
     try {
       // 🔥 Step 1: Create PaymentIntent
@@ -38,15 +52,13 @@ const Payment = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            amount: orderDetails.totalAmount,
-          }),
+          body: JSON.stringify({ amount }),
         }
       );
 
       const data = await res.json();
 
-      // 🚨 CHECK RESPONSE
+      // 🚨 Backend error check
       if (!res.ok || !data.clientSecret) {
         console.error("Backend error:", data);
         alert(data.message || "Failed to create payment intent");
@@ -55,16 +67,20 @@ const Payment = () => {
 
       const clientSecret = data.clientSecret;
 
-      // 🔥 Step 2: Get Card Element
       const cardElement = elements.getElement(CardElement);
 
-      // 🔥 Step 3: Confirm Payment
+      if (!cardElement) {
+        alert("Card element not found");
+        return;
+      }
+
+      // 🔥 Step 2: Confirm Payment
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
           billing_details: {
-            name: `${orderDetails.firstName} ${orderDetails.lastName}`,
-            email: orderDetails.email,
+            name: `${orderDetails.firstName || ""} ${orderDetails.lastName || ""}`,
+            email: orderDetails.email || "",
           },
         },
       });
@@ -83,6 +99,8 @@ const Payment = () => {
     } catch (error) {
       console.error(error);
       alert("Error: " + error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,17 +136,18 @@ const Payment = () => {
           </label>
         </div>
 
-        {/* Stripe Payment */}
+        {/* Stripe */}
         {selectedMethod === "creditCard" && (
           <form onSubmit={handlePayment}>
             <div className="payment-form">
               <label>Card Details</label>
+
               <div className="form-control">
                 <CardElement />
               </div>
 
-              <button type="submit" className="btn btn-primary">
-                Confirm Order
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? "Processing..." : "Confirm Order"}
               </button>
             </div>
           </form>
@@ -136,7 +155,11 @@ const Payment = () => {
 
         {/* COD */}
         {selectedMethod === "cash on delivery" && (
-          <button className="btn btn-success" onClick={handlePayment}>
+          <button
+            className="btn btn-success"
+            onClick={handlePayment}
+            disabled={loading}
+          >
             Confirm Order
           </button>
         )}
