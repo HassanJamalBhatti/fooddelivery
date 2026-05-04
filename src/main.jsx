@@ -10,7 +10,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 
 // ✅ Stripe public key
-const stripePromise = loadStripe("YOUR_PUBLISHABLE_KEY");
+const stripePromise = loadStripe("pk_test_51TTGjwHGbNWnxEBfjHtRNNr4XSmfk12qaSSXBp4Tr946mzd2BuZGG4MfpNUeofLbNqV2WTg0qmBBBQmSa5BL0tXo00Oa8FiZU1");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
