@@ -30,23 +30,35 @@ const Payment = () => {
     }
 
     try {
-      // 🔥 Step 1: Create PaymentIntent from backend
-      const res = await fetch("https://fooddeliverybackend-t1pl.onrender.com/api/create-payment-intent", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: orderDetails.totalAmount,
-        }),
-      });
+      // 🔥 Step 1: Create PaymentIntent
+      const res = await fetch(
+        "https://fooddeliverybackend-t1pl.onrender.com/api/create-payment-intent",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            amount: orderDetails.totalAmount,
+          }),
+        }
+      );
 
-      const { clientSecret } = await res.json();
+      const data = await res.json();
 
-      // 🔥 Step 2: Get card element
+      // 🚨 CHECK RESPONSE
+      if (!res.ok || !data.clientSecret) {
+        console.error("Backend error:", data);
+        alert(data.message || "Failed to create payment intent");
+        return;
+      }
+
+      const clientSecret = data.clientSecret;
+
+      // 🔥 Step 2: Get Card Element
       const cardElement = elements.getElement(CardElement);
 
-      // 🔥 Step 3: Confirm payment
+      // 🔥 Step 3: Confirm Payment
       const result = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
@@ -59,12 +71,17 @@ const Payment = () => {
 
       if (result.error) {
         alert("Payment failed: " + result.error.message);
-      } else {
-        if (result.paymentIntent.status === "succeeded") {
-          alert("Payment successful and order confirmed!");
-        }
+        return;
       }
+
+      if (result.paymentIntent?.status === "succeeded") {
+        alert("Payment successful and order confirmed!");
+      } else {
+        alert("Payment not completed");
+      }
+
     } catch (error) {
+      console.error(error);
       alert("Error: " + error.message);
     }
   };
@@ -80,29 +97,29 @@ const Payment = () => {
         <h4 className="mb-4">Choose Your Payment Method</h4>
 
         <div className="payment-options">
-          <label className={`payment-option ${selectedMethod === 'creditCard' ? 'selected' : ''}`}>
+          <label className={`payment-option ${selectedMethod === "creditCard" ? "selected" : ""}`}>
             <input
               type="radio"
               value="creditCard"
-              checked={selectedMethod === 'creditCard'}
+              checked={selectedMethod === "creditCard"}
               onChange={handleMethodChange}
             />
             Credit Card / Google Pay
           </label>
 
-          <label className={`payment-option ${selectedMethod === 'cash on delivery' ? 'selected' : ''}`}>
+          <label className={`payment-option ${selectedMethod === "cash on delivery" ? "selected" : ""}`}>
             <input
               type="radio"
               value="cash on delivery"
-              checked={selectedMethod === 'cash on delivery'}
+              checked={selectedMethod === "cash on delivery"}
               onChange={handleMethodChange}
             />
             Cash on Delivery
           </label>
         </div>
 
-        {/* 🔥 Stripe Card Element */}
-        {selectedMethod === 'creditCard' && (
+        {/* Stripe Payment */}
+        {selectedMethod === "creditCard" && (
           <form onSubmit={handlePayment}>
             <div className="payment-form">
               <label>Card Details</label>
@@ -117,7 +134,8 @@ const Payment = () => {
           </form>
         )}
 
-        {selectedMethod === 'cash on delivery' && (
+        {/* COD */}
+        {selectedMethod === "cash on delivery" && (
           <button className="btn btn-success" onClick={handlePayment}>
             Confirm Order
           </button>
