@@ -10,7 +10,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 
 // ✅ Stripe public key
-const stripePromise = loadStripe("pk_test_51TTGjwHGbNWnxEBfjHtRNNr4XSmfk12qaSSXBp4Tr946mzd2BuZGG4MfpNUeofLbNqV2WTg0qmBBBQmSa5BL0tXo00Oa8FiZU1");
+const stripePromise = loadStripe("pk_live_51TTGiyHgw0gfN1LREZFfB6SeXLIlglmuYUczadUPPGaNm10ecQ7pWTiSXwt6irBAN5Fke4dXSES0QpIhdS4vFyvK0065w4i4PF");
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
